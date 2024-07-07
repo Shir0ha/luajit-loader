@@ -50,9 +50,7 @@ unsafe fn attach(lua: &Lua) {
         "find_pattern",
         lua.create_function(|_, (module, sig): (String, String)| {
             if let Ok(process) = Process::with_pid(std::process::id()) {
-                dbg!(std::process::id(), &process);
                 if let Ok(_module) = process.module(module.as_str()) {
-                    dbg!(module);
                     let _sig = Signature {
                         name: "".to_string(),
                         pattern: sig,
@@ -63,7 +61,6 @@ unsafe fn attach(lua: &Lua) {
                         rip_offset: 0,
                     };
                     if let Ok(_addr) = _module.find_signature(&_sig) {
-                        dbg!(&_addr);
                         return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
                     }
                 }
@@ -74,7 +71,6 @@ unsafe fn attach(lua: &Lua) {
     ).expect("set find_pattern failed");
 
     let mut editor = DefaultEditor::new().expect("Failed to create editor");
-
     loop {
         let mut prompt = "> ";
         let mut line = String::new();
