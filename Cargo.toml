@@ -13,7 +13,7 @@ codegen-units = 1
 
 [dependencies]
 rustyline = "14.0.0"
-libmem = "5"
+skidscan = "2.0.1"
 
 [dependencies.windows]
 version = "0.*"

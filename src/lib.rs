@@ -1,9 +1,10 @@
+use std::str::FromStr;
 use std::thread;
 
-use libmem::*;
 use mlua::{Error, LightUserData, MultiValue, Value};
 use mlua::prelude::*;
 use rustyline::DefaultEditor;
+use skidscan::*;
 use windows::{Win32::Foundation::*, Win32::System::Console::*, Win32::System::SystemServices::*};
 
 thread_local! {
@@ -58,8 +59,8 @@ fn init_repl() {
         globals.set(
             "find_pattern",
             lua.create_function(|_, (module, sig): (String, String)| {
-                if let Some(_module) = find_module(module.as_str()) {
-                    if let Some(_addr) = unsafe { sig_scan(sig.as_str(), _module.base, _module.size) } {
+                if let Ok(_sig) = Signature::from_str(sig.as_str()) {
+                    if let Ok(_addr) = unsafe { _sig.scan_module(module.as_str()) } {
                         return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
                     }
                 }
