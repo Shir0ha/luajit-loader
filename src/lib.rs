@@ -33,42 +33,49 @@ fn format_val(values: MultiValue) -> String {
     return values.iter().map(|v| format!("{:#?}", v)).collect::<Vec<_>>().join("    ");
 }
 
+fn init_globals(lua: &Lua) -> Result<(), Error> {
+    let globals = lua.globals();
+    globals.set(
+        "print",
+        lua.create_function(|_, values: MultiValue| {
+            println!(
+                "< {}",
+                format_val(values)
+            );
+            Ok(())
+        })?,
+    )?;
+    globals.set(
+        "error",
+        lua.create_function(|_, values: MultiValue| {
+            eprintln!(
+                "! < {}",
+                format_val(values)
+            );
+            Ok(())
+        })?,
+    )?;
+    globals.set(
+        "find_pattern",
+        lua.create_function(|_, (module, sig): (String, String)| {
+            if let Ok(_sig) = Signature::from_str(sig.as_str()) {
+                if let Ok(_addr) = unsafe { _sig.scan_module(module.as_str()) } {
+                    return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
+                }
+            }
+
+            return Ok(MultiValue::new());
+        })?,
+    )?;
+    Ok(())
+}
+
 fn init_repl() {
     LUASTATE.with(|lua| {
-        let globals = lua.globals();
-        globals.set(
-            "print",
-            lua.create_function(|_, values: MultiValue| {
-                println!(
-                    "< {}",
-                    format_val(values)
-                );
-                Ok(())
-            }).expect("print failed"),
-        ).expect("set print failed");
-        globals.set(
-            "error",
-            lua.create_function(|_, values: MultiValue| {
-                eprintln!(
-                    "! < {}",
-                    format_val(values)
-                );
-                Ok(())
-            }).expect("error failed"),
-        ).expect("set error failed");
-        globals.set(
-            "find_pattern",
-            lua.create_function(|_, (module, sig): (String, String)| {
-                if let Ok(_sig) = Signature::from_str(sig.as_str()) {
-                    if let Ok(_addr) = unsafe { _sig.scan_module(module.as_str()) } {
-                        return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
-                    }
-                }
-
-                return Ok(MultiValue::new());
-            }).expect("find_pattern failed"),
-        ).expect("set find_pattern failed");
-
+        if let Err(e) = init_globals(lua) {
+            eprintln!("{}", e);
+        }
+        
         let mut editor = DefaultEditor::new().expect("Failed to create editor");
         loop {
             let mut prompt = "> ";
