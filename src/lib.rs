@@ -1,8 +1,8 @@
 use std::thread;
 
+use libmem::*;
 use mlua::{Error, LightUserData, MultiValue, Value};
 use mlua::prelude::*;
-use proc_mem::{Process, Signature};
 use rustyline::DefaultEditor;
 use windows::{Win32::Foundation::*, Win32::System::Console::*, Win32::System::SystemServices::*};
 
@@ -58,20 +58,9 @@ fn init_repl() {
         globals.set(
             "find_pattern",
             lua.create_function(|_, (module, sig): (String, String)| {
-                if let Ok(process) = Process::with_pid(std::process::id()) {
-                    if let Ok(_module) = process.module(module.as_str()) {
-                        let _sig = Signature {
-                            name: "".to_string(),
-                            pattern: sig,
-                            offsets: vec![],
-                            extra: 0,
-                            relative: false,
-                            rip_relative: false,
-                            rip_offset: 0,
-                        };
-                        if let Ok(_addr) = _module.find_signature(&_sig) {
-                            return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
-                        }
+                if let Some(_module) = find_module(module.as_str()) {
+                    if let Some(_addr) = unsafe { sig_scan(sig.as_str(), _module.base, _module.size) } {
+                        return Ok(MultiValue::from_iter(vec![Value::LightUserData(LightUserData(_addr as *mut _))]));
                     }
                 }
 

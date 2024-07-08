@@ -12,8 +12,8 @@ lto = true
 codegen-units = 1
 
 [dependencies]
-proc_mem = "0.*"
 rustyline = "14.0.0"
+libmem = "5"
 
 [dependencies.windows]
 version = "0.*"
